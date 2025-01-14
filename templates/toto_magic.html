@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TOTO Magic</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- Telegram Web App JavaScript -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Telegram Analytics script -->
+    <script async src="https://tganalytics.xyz/index.js" type="text/javascript"></script>
+
+    <!-- AdsGram Rewarded Ads script -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+
+    <!-- CSS Styles -->
+    <link rel="stylesheet" href="{{ url_for('toto_magic.static', filename='styles.css') }}">
+</head>
+
+<body>
+    <div id="main-container">
+        <!-- Status Container -->
+        <div id="status-container" style="display: none;">
+            <div id="balance-container">
+                <img src="{{ url_for('toto_magic.static', filename='totoCoin.png') }}" alt="Coin Image">
+                <span id="balance">Balance: 0</span>
+            </div>
+            <div id="wish-refill">
+                <div id="wish-refill-segment-1" class="wish-refill-segment"></div>
+                <div id="wish-refill-segment-2" class="wish-refill-segment"></div>
+                <div id="wish-refill-segment-3" class="wish-refill-segment"></div>
+            </div>
+            <div id="wish-refill-timer">Next wish refill in: 8 hours</div>
+        </div>
+
+        <!-- Game Content -->
+        <div id="game-content" style="display: block;">
+            <div id="scaling-wrapper" style="display: flex;">
+                <div id="magic-circle"></div>
+                <button id="start-button" class="golden-button" disabled>Start</button>
+                <button id="wish-button" class="golden-button" style="display: none; font-size:1.5em;">Make a Wish</button>
+                <audio id="make-wish-sound" src="{{ url_for('toto_magic.static', filename='sounds/Magic2.m4a') }}"></audio>
+                <div id="fortune-reward-container" style="visibility: hidden;">
+                    <div id="fortune">Fortune: </div>
+                    <div id="reward">Your reward: </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Content Container -->
+        <div id="leaderboard-content" style="display: none;">
+            <div id="leaderboard-container">
+                <h1>Leaderboard</h1>
+                <table id="leaderboard-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Username</th>
+                            <th>Balance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Leaderboard entries dynamically loaded -->
+                    </tbody>
+                </table>
+                <div id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- Shop Content Container -->
+        <div id="shop-content" style="display: none;">
+            <h2>Shop</h2>
+            <p>Coming soon...</p>
+        </div>
+
+        <!-- Social Content Container -->
+        <div id="social-content" style="display: none;">
+            <!-- NEW Collab Quest Section at the TOP -->
+            <div class="social-section" id="battleground-quest-section">
+                <h2>NEW Collab Quest!</h2>
+        <!-- 50% of parent container width -->
+        <img src="{{ url_for('toto_magic.static', filename='collab_logo.png') }}"
+             alt="Collab Logo"
+             style="max-width: 50%; height: auto;" />
+                <p>
+                    Join TON Battleground and compete with the TOTO community!<br>
+                    Select the special "TOTO" coin patch in-game to earn +1000 coins!
+                </p>
+                <button id="battleground-button" class="golden-button">Go to TON Battleground</button>
+                <p id="battleground-timer" style="display: none;">
+                    Checking quest in <span id="battleground-countdown">30</span> seconds...
+                </p>
+            </div>
+    <!-- (A) Follow TOTOtheToad on X Quest -->
+    <div class="social-section" id="follow-toto-quest-section">
+        <h2>Quest: Follow TOTOtheToad on X</h2>
+        <p>Earn +1000 coins just once by following TOTOtheToad on X!</p>
+        <button id="follow-toto-button" class="golden-button">Follow TOTOtheToad</button>
+        <p id="follow-toto-timer" style="display: none;">
+            Checking quest in <span id="follow-toto-countdown">30</span> seconds...
+        </p>
+    </div>
+            <!-- AdsGram Rewarded Ads Section -->
+            <div class="social-section" id="ads-section" style="overflow-y:auto;">
+                <h2>Watch Ads for Extra Wishes</h2>
+                <p>Watch up to <strong>3 Ads per day</strong> (each ad grants +1 wish)</p>
+                <p>Be sure to have used your daily wishes</p>
+                <p><strong>Full wish bar will not overfill (3 MAX)</strong></p>
+                <p id="ads-status-msg" style="color: red;"></p>
+                <button id="watch-ad-button" class="golden-button">Watch Ad (0/3)</button>
+                <p id="ads-timer" style="display:none;">Please wait... <span id="ads-countdown"></span> seconds.</p>
+            </div>
+
+            <!-- Invite Friends Section -->
+            <div class="social-section">
+                <h2>Invite Friends</h2>
+                <p>Share your referral link to earn bonuses!</p>
+                <p>100 Coins to you and a Friend!</p>
+                <input type="text" id="referral-link" readonly>
+                <button id="copy-referral-button" class="golden-button">Copy Referral Link</button>
+                <button id="telegram-referral-button" class="golden-button">Send via Telegram</button>
+            </div>
+
+            <!-- Engage with Our Tweet Section -->
+            <div class="social-section">
+                <h2>Engage with Our Tweet</h2>
+                <p>Engage with our tweet to earn an extra wish! &#x1FA84;</p>
+                <button id="tweet-button" class="golden-button">Go to Tweet</button>
+                <p id="tweet-timer" style="display: none;">Your wish will be refilled in <span id="countdown">15</span> seconds.</p>
+            </div>
+
+            <!-- Daily Check-In Section -->
+            <div class="social-section" id="daily-checkin-section" style="overflow-y:auto;">
+                <h2>Daily Check-In</h2>
+                <p>Claim daily rewards for 7 consecutive days!</p>
+                <p id="daily-checkin-info">Day <span id="daily-day">1</span>: <span id="daily-reward">10</span> coins</p>
+                <p id="daily-status"></p>
+                <button id="daily-claim-button" class="golden-button">Claim</button>
+                <p id="daily-timer" style="display:none;">Next claim in <span id="daily-countdown"></span> seconds.</p>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div id="tab-navigation">
+            <div class="tab active" data-tab="game">&#x1F52E;</div>
+            <div class="tab" data-tab="leaderboard">&#x1F3C6;</div>
+            <div class="tab" data-tab="shop">&#x1F6D2;</div>
+            <div class="tab" data-tab="social">&#x2709;</div>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('DOM fully loaded and parsed');
+        const baseURL = '/games/toto_magic';
+        let tg = null;
+
+        // Attempt to load Telegram WebApp
+        if (window.Telegram && window.Telegram.WebApp) {
+            tg = window.Telegram.WebApp;
+            tg.ready();
+            if (tg.expand) tg.expand();
+        }
+
+        // Initialize Telegram Analytics
+        window.addEventListener('load', () => {
+            if (window.telegramAnalytics && window.telegramAnalytics.init) {
+                window.telegramAnalytics.init({
+                    token: "REDACTED",
+                    appName: "10485_totomagic_333"
+                });
+                console.log('Telegram Mini Apps Analytics initialized successfully.');
+            } else {
+                console.error('Telegram Analytics SDK not found or init function missing.');
+            }
+        });
+
+        ////////////////////////////////
+        // AdsGram Rewarded Ad Init
+        ////////////////////////////////
+        // Replace blockId with your real block ID from adsgram.ai
+        const AdController = window.Adsgram?.init({
+            blockId: "REDACTED"
+        });
+        console.log("AdsGram init =>", AdController);
+
+        // Theming
+        function applyTheme() {
+            if (!tg) return;
+            const themeParams = tg.themeParams || {};
+            const cssVars = {
+                '--tg-theme-bg-color': themeParams.bg_color || '#ffffff',
+                '--tg-theme-text-color': themeParams.text_color || '#000000',
+                '--tg-theme-button-color': themeParams.button_color || 'gold',
+                '--tg-theme-button-text-color': themeParams.button_text_color || '#000000',
+                '--tg-theme-secondary-bg-color': themeParams.secondary_bg_color || 'rgba(255, 255, 255, 0.9)'
+            };
+            for (const [key, value] of Object.entries(cssVars)) {
+                document.documentElement.style.setProperty(key, value);
+            }
+        }
+        if (tg) applyTheme();
+
+        // Auth
+        function verifyInitData(encodedInitData) {
+            console.log('Verifying init data...');
+            fetch(`${baseURL}/auth/telegram`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ initData: encodedInitData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Authentication response:', data);
+                if (data.status === 'ok') {
+                    console.log('User verified successfully');
+                    document.getElementById('start-button').disabled = false;
+                    const balance = data.user.balance !== undefined ? data.user.balance : 0;
+                    document.getElementById('balance').innerText = `Balance: ${balance}`;
+                    const wishCount = data.user.wish_count !== undefined ? data.user.wish_count : 3;
+                    updateWishRefill(wishCount);
+                    document.getElementById('status-container').style.display = 'block';
+                    fetchWishStatus();
+                } else {
+                    alert('Authentication failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error verifying initData:', error);
+                alert('Authentication failed. Please try again. https://t.me/totomagicbot');
+            });
+        }
+
+        if (tg) {
+            const initData = tg.initData || '';
+            console.log('initData before encoding:', initData);
+            const encodedInitData = btoa(initData);
+            console.log('Encoded initData:', encodedInitData);
+            if (encodedInitData && encodedInitData.length > 0) {
+                verifyInitData(encodedInitData);
+            } else {
+                alert('Authentication failed. Please open the app within Telegram. https://t.me/totomagicbot');
+            }
+        } else {
+            alert('Please open this app within Telegram.');
+        }
+
+        // Wish Status
+        function fetchWishStatus() {
+            console.log('Fetching wish status...');
+            fetch(`${baseURL}/get_wish_status`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Wish status data:', data);
+                updateWishRefill(data.wish_count);
+                document.getElementById('wish-refill-timer').innerText =
+                    `Next wish refill in: ${data.time_until_next_refill}`;
+            })
+            .catch(error => {
+                console.error('Error fetching wish status:', error);
+            });
+        }
+
+        // Buttons: Start + Wish
+        const makeWishSound = document.getElementById('make-wish-sound');
+        const startButton = document.getElementById('start-button');
+        if (startButton) {
+            startButton.addEventListener('click', function() {
+                console.log('Start button clicked');
+                startButton.style.display = 'none';
+                document.getElementById('wish-button').style.display = 'block';
+            });
+        }
+
+        const wishButton = document.getElementById('wish-button');
+        if (wishButton) {
+            wishButton.addEventListener('click', function() {
+                console.log('Make a Wish button clicked');
+                document.getElementById('fortune-reward-container').style.visibility = 'hidden';
+
+                fetch(`${baseURL}/make_wish`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Wish made, response:', data);
+                    if (data.error) {
+                        alert(data.error);
+                        return;
+                    }
+                    const rewardText = data.reward !== undefined ? data.reward : 'No reward';
+                    const fortuneText = data.fortune !== undefined ? data.fortune : 'No fortune';
+
+                    typeText(`Your reward: ${rewardText}`, document.getElementById('reward'));
+                    typeText(`Fortune: ${fortuneText}`, document.getElementById('fortune'));
+                    document.getElementById('fortune-reward-container').style.visibility = 'visible';
+                    document.getElementById('balance').innerText = `Balance: ${data.balance}`;
+                    showCoinAnimation(data.coins);
+
+                    makeWishSound.play().catch(error => {
+                        console.error('Error playing sound:', error);
+                    });
+
+                    updateWishRefill(data.wish_count);
+                })
+                .catch(error => {
+                    console.error('Error making a wish:', error);
+                });
+            });
+        }
+
+        function updateWishRefill(currentWishCount) {
+            console.log('Updating wish refill with wish count:', currentWishCount);
+            const refillSegments = document.getElementsByClassName('wish-refill-segment');
+            for (let i = 0; i < 3; i++) {
+                if (i < currentWishCount) {
+                    refillSegments[i].style.background = 'gold';
+                } else {
+                    refillSegments[i].style.background = 'grey';
+                }
+            }
+
+            // refresh timer
+            fetch(`${baseURL}/get_wish_status`, {
+                method: 'GET',
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('wish-refill-timer').innerText =
+                    `Next wish refill in: ${data.time_until_next_refill}`;
+            })
+            .catch(error => {
+                console.error('Error fetching wish status:', error);
+            });
+        }
+
+        function typeText(text, element) {
+            element.innerHTML = '';
+            let i = 0;
+            let interval = setInterval(() => {
+                if (i < text.length) {
+                    element.innerHTML += text.charAt(i);
+                    i++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 50);
+        }
+
+        function showCoinAnimation(amount, big=false) {
+            console.log('Showing coin animation for amount:', amount);
+            for (let i = 0; i < amount; i++) {
+                const coin = document.createElement('img');
+                coin.src = '{{ url_for("toto_magic.static", filename="totoCoin.png") }}';
+                coin.className = 'coin';
+                coin.style.top = `${Math.random() * 50 + 20}%`;
+                coin.style.left = `${Math.random() * 100}%`;
+                coin.style.position = 'absolute';
+                coin.style.width = big ? '80px' : '50px';
+                document.body.appendChild(coin);
+
+                setTimeout(() => {
+                    coin.remove();
+                }, 1000);
+            }
+        }
+
+        // Social Tab
+        function getReferralLink() {
+            if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                const userId = tg.initDataUnsafe.user.id;
+                if (!userId) {
+                    alert('Unable to retrieve your Telegram ID.');
+                    return '';
+                }
+                const botUsername = 'totomagicbot';
+                return `https://t.me/${botUsername}?start=${userId}`;
+            } else {
+                alert('Please open this app within Telegram.');
+                return '';
+            }
+        }
+
+        function addSocialTabEventListeners() {
+            console.log('Adding event listeners for social tab...');
+
+            //////////////////////////////////
+            // (A) NEW Collab Quest
+            //////////////////////////////////
+            const bgroundBtn = document.getElementById('battleground-button');
+            const bgroundTimer = document.getElementById('battleground-timer');
+            const bgroundCountdown = document.getElementById('battleground-countdown');
+
+            if (bgroundBtn && !bgroundBtn.hasListener) {
+                bgroundBtn.addEventListener('click', () => {
+                    console.log('Battleground quest clicked');
+                    bgroundBtn.disabled = true;
+
+                    // open in new tab
+                    window.open('https://t.me/TON_BATTLEGROUND_bot?startapp=referral%3D1701738848','_blank');
+
+                    // Wait for user to return
+                    document.addEventListener('visibilitychange', function onVisibilityChange() {
+                        if (!document.hidden) {
+                            document.removeEventListener('visibilitychange', onVisibilityChange);
+                            // 30s countdown
+                            let countdown = 30;
+                            bgroundTimer.style.display = 'block';
+                            bgroundCountdown.textContent = countdown;
+
+                            const interval = setInterval(() => {
+                                countdown--;
+                                bgroundCountdown.textContent = countdown;
+                                if (countdown <= 0) {
+                                    clearInterval(interval);
+
+                                    // Attempt to claim 1000 coin reward
+                                    fetch(`${baseURL}/claim_collab_quest`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include'
+                                    })
+                                    .then(resp => resp.json())
+                                    .then(data => {
+                                        if (data.status === 'success') {
+                                            alert('You earned 1000 coins from the Collab Quest!');
+                                            document.getElementById('balance').innerText = `Balance: ${data.new_balance}`;
+                                            showCoinAnimation(80, true);
+                                        } else {
+                                            alert(data.message || 'Unable to claim Collab Quest right now.');
+                                        }
+                                    })
+                                    .catch(err => console.error('Error claiming Collab Quest:', err))
+                                    .finally(() => {
+                                        bgroundTimer.style.display = 'none';
+                                        // optional: re-enable button or keep disabled
+                                    });
+                                }
+                            }, 1000);
+                        }
+                    });
+                });
+                bgroundBtn.hasListener = true;
+            }
+const followTotoSection = document.getElementById('follow-toto-quest-section');
+const followTotoButton = document.getElementById('follow-toto-button');
+const followTotoTimerEl = document.getElementById('follow-toto-timer');
+const followTotoCountdownEl = document.getElementById('follow-toto-countdown');
+
+// 1. Check Quest Status on load
+function loadFollowTotoStatus() {
+    fetch(`${baseURL}/get_follow_toto_status`, {
+    method: 'GET',
+    credentials: 'include'
+  })
+  .then(resp => resp.json())
+  .then(data => {
+    if (data.error) {
+      console.error('Error from get_follow_toto_status:', data.error);
+      return;
+    }
+    if (data.done) {
+      // Already done -> disable button, hide timer
+      if (followTotoButton) followTotoButton.disabled = true;
+      if (followTotoTimerEl) followTotoTimerEl.style.display = 'none';
+      // Optionally show a message "Quest Completed"
+    } else {
+      // Not done -> user can proceed
+      if (followTotoButton) followTotoButton.disabled = false;
+    }
+  })
+  .catch(err => console.error('Error loading follow TOTO quest status:', err));
+}
+
+// 2. On button click => open the link, start a timer, attempt to claim
+if (followTotoButton && !followTotoButton.hasListener) {
+  followTotoButton.addEventListener('click', () => {
+    // Open the TOTO Twitter link in a new tab
+    window.open('https://x.com/intent/user?screen_name=TOTOtheToad', '_blank');
+
+    // Start your 30-second timer
+    let count = 30;  // or however long you want
+    followTotoTimerEl.style.display = 'block';
+    followTotoCountdownEl.textContent = count;
+
+    const interval = setInterval(() => {
+      count--;
+      followTotoCountdownEl.textContent = count;
+      if (count <= 0) {
+        clearInterval(interval);
+
+        // Attempt to claim the quest
+        fetch(`${baseURL}/claim_follow_toto_quest`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include'
+        })
+        .then(r => r.json())
+          .then(data => {
+            if (data.status === 'success') {
+              alert(`Quest claimed! +1000 coins added!`);
+              // Update balance
+              document.getElementById('balance').innerText =
+                `Balance: ${data.new_balance}`;
+              // Disable the button
+              if (followTotoButton) followTotoButton.disabled = true;
+              // Optionally hide the timer or show "Quest done"
+              followTotoTimerEl.style.display = 'none';
+            } else {
+              alert(data.message || 'Unable to claim quest right now.');
+            }
+          })
+          .catch(err => console.error('Error claiming follow TOTO quest:', err));
+      }
+    }, 1000);
+  });
+  followTotoButton.hasListener = true;
+}
+
+// 3. On social tab load, call loadFollowTotoStatus
+loadFollowTotoStatus();
+            //////////////////////////////////
+            // (B) Ads => watch 3 daily
+            //////////////////////////////////
+            const watchAdButton = document.getElementById('watch-ad-button');
+            const adsStatusMsg = document.getElementById('ads-status-msg');
+            const adsTimerEl = document.getElementById('ads-timer');
+            const adsCountdownEl = document.getElementById('ads-countdown');
+
+            let dailyAdCount = 0;
+            const MAX_ADS_PER_DAY = 3;
+
+            function updateAdButtonUI() {
+                watchAdButton.textContent = `Watch Ad (${dailyAdCount}/${MAX_ADS_PER_DAY})`;
+                if (dailyAdCount >= MAX_ADS_PER_DAY) {
+                    watchAdButton.disabled = true;
+                    adsStatusMsg.textContent = "You've reached 3 ads for today.";
+                } else {
+                    watchAdButton.disabled = false;
+                    adsStatusMsg.textContent = "";
+                }
+            }
+            updateAdButtonUI();
+
+            function startAdsCountdown(seconds) {
+                adsTimerEl.style.display = 'block';
+                adsCountdownEl.textContent = seconds;
+                const interval = setInterval(() => {
+                    seconds--;
+                    adsCountdownEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        adsTimerEl.style.display = 'none';
+                    }
+                }, 1000);
+            }
+
+            if (watchAdButton && !watchAdButton.hasListener) {
+                watchAdButton.addEventListener('click', () => {
+                    if (!AdController) {
+                        alert("AdsGram not loaded or invalid blockId. Please try again later.");
+                        return;
+                    }
+                    if (dailyAdCount >= MAX_ADS_PER_DAY) {
+                        alert("Max ads per day reached!");
+                        return;
+                    }
+                    watchAdButton.disabled = true;
+                    AdController.show()
+                    .then(() => {
+                        console.log("Ad watched or closed. Attempting to award wish...");
+
+                        dailyAdCount++;
+                        updateAdButtonUI();
+
+                        // call server route
+                        fetch(`${baseURL}/grant_extra_wish_from_ad`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include'
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                alert('You have earned an extra wish from the ad!');
+                                updateWishRefill(data.wish_count);
+                                showCoinAnimation(10);
+                            } else {
+                                alert(data.message || 'Unable to get extra wish right now.');
+                            }
+                        })
+                        .catch(err => console.error('Error awarding wish from ad:', err));
+                    })
+                    .catch(err => {
+                        console.log("Ad error =>", err);
+                    })
+                    .finally(() => {
+                        if (dailyAdCount < MAX_ADS_PER_DAY) {
+                            watchAdButton.disabled = false;
+                        }
+                        startAdsCountdown(10);
+                    });
+                });
+                watchAdButton.hasListener = true;
+            }
+
+            //////////////////////////////////
+            // (C) Referral, Tweet, & Daily Check
+            //////////////////////////////////
+            const copyReferralButton = document.getElementById('copy-referral-button');
+            if (copyReferralButton && !copyReferralButton.hasListener) {
+                copyReferralButton.addEventListener('click', function() {
+                    const referralLinkInput = document.getElementById('referral-link');
+                    referralLinkInput.select();
+                    referralLinkInput.setSelectionRange(0, 99999);
+                    document.execCommand('copy');
+                    alert('Referral link copied to clipboard!');
+                });
+                copyReferralButton.hasListener = true;
+            }
+
+            const telegramReferralButton = document.getElementById('telegram-referral-button');
+            if (telegramReferralButton && !telegramReferralButton.hasListener) {
+                telegramReferralButton.addEventListener('click', function() {
+                    const referralLink = getReferralLink();
+                    if (referralLink) {
+                        const message = `Make a Wish in TOTO Magic! 🪄 Magic on TONCHAIN 🔮 Just Wish-To-Earn! Use my referr al for 100 coins: ${referralLink}`;
+                        window.open(
+                            `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${encodeURIComponent(message)}`,
+                            '_blank'
+                        );
+                    }
+                });
+                telegramReferralButton.hasListener = true;
+            }
+            // Tweet Wish
+            const tweetButton = document.getElementById('tweet-button');
+            if (tweetButton && !tweetButton.hasListener) {
+                tweetButton.addEventListener('click', function() {
+                    console.log('Tweet button clicked');
+                    this.disabled = true;
+                    window.open('https://x.com/TOTOtheToad/status/1877168797506773071', '_blank');
+                    document.addEventListener('visibilitychange', function onVisibilityChange() {
+                        if (!document.hidden) {
+                            document.removeEventListener('visibilitychange', onVisibilityChange);
+                            let countdown = 15;
+                            document.getElementById('tweet-timer').style.display = 'block';
+                            const countdownElement = document.getElementById('countdown');
+                            countdownElement.textContent = countdown;
+
+                            const interval = setInterval(() => {
+                                countdown--;
+                                countdownElement.textContent = countdown;
+                                if (countdown <= 0) {
+                                    clearInterval(interval);
+                                    fetch(`${baseURL}/grant_extra_wish`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        credentials: 'include'
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.status === 'success') {
+                                            alert('You have earned an extra wish!');
+                                            updateWishRefill(data.wish_count);
+                                            document.getElementById('tweet-timer').style.display = 'none';
+                                        } else {
+                                            alert(data.message);
+                                        }
+                                        setTimeout(() => {
+                                            tweetButton.disabled = false;
+                                        }, 24 * 60 * 60 * 1000);
+                                    })
+                                    .catch(error => {
+                                        console.error('Error granting extra wish:', error);
+                                    });
+                                }
+                            }, 1000);
+                        }
+                    });
+                });
+                tweetButton.hasListener = true;
+            }
+
+            // Daily Check
+            const dailyDayEl = document.getElementById('daily-day');
+            const dailyRewardEl = document.getElementById('daily-reward');
+            const dailyClaimBtn = document.getElementById('daily-claim-button');
+            const dailyStatusEl = document.getElementById('daily-status');
+            const dailyTimerEl = document.getElementById('daily-timer');
+            const dailyCountdownEl = document.getElementById('daily-countdown');
+
+            function loadDailyStatus() {
+                fetch(`${baseURL}/get_daily_status`, {
+                    method: 'GET',
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.error) {
+                        dailyStatusEl.textContent = data.error;
+                        dailyClaimBtn.style.display = 'none';
+                        dailyTimerEl.style.display = 'none';
+                        return;
+                    }
+                    dailyDayEl.textContent = data.current_day;
+                    let currentReward = Math.min(data.current_day * 10, 70);
+                    dailyRewardEl.textContent = currentReward;
+
+                    if (data.time_until_next_claim === "00:00:00") {
+                        dailyStatusEl.textContent = 'You can claim your daily reward!';
+                        dailyClaimBtn.disabled = false;
+                        dailyTimerEl.style.display = 'none';
+                    } else {
+                        dailyStatusEl.textContent = 'You have already claimed today.';
+                        dailyClaimBtn.disabled = true;
+
+                        const parts = data.time_until_next_claim.split(':');
+                        const h = parseInt(parts[0], 10);
+                        const m = parseInt(parts[1], 10);
+                        const s = parseInt(parts[2], 10);
+                        const totalSeconds = h * 3600 + m * 60 + s;
+
+                        if (totalSeconds > 0) {
+                            dailyTimerEl.style.display = 'block';
+                            startDailyCountdown(totalSeconds);
+                        } else {
+                            dailyTimerEl.style.display = 'none';
+                        }
+                    }
+                })
+                .catch(err => console.error('Error loading daily status:', err));
+            }
+
+            function startDailyCountdown(seconds) {
+                dailyCountdownEl.textContent = seconds;
+                const interval = setInterval(() => {
+                    seconds--;
+                    dailyCountdownEl.textContent = seconds;
+                    if (seconds <= 0) {
+                        clearInterval(interval);
+                        loadDailyStatus();
+                    }
+                }, 1000);
+            }
+
+            dailyClaimBtn.addEventListener('click', () => {
+                dailyClaimBtn.disabled = true;
+                fetch(`${baseURL}/claim_daily`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include'
+                })
+                .then(resp => resp.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(data.error);
+                        dailyClaimBtn.disabled = false;
+                        return;
+                    }
+                    document.getElementById('balance').innerText = `Balance: ${data.new_balance}`;
+                    dailyDayEl.textContent = data.next_day;
+                    dailyRewardEl.textContent = data.coins;
+
+                    if (data.next_day === 7) {
+                        showCoinAnimation(data.coins, true);
+                    } else {
+                        showCoinAnimation(data.coins);
+                    }
+                    dailyStatusEl.textContent = 'Reward claimed! See you tomorrow.';
+                    dailyClaimBtn.disabled = true;
+                    dailyTimerEl.style.display = 'block';
+                    startDailyCountdown(24 * 3600);
+                })
+                .catch(err => {
+                    console.error('Error claiming daily:', err);
+                    dailyClaimBtn.disabled = false;
+                });
+            });
+            loadDailyStatus();
+        }
+
+        // Leaderboard
+        function loadLeaderboard(page = 1) {
+            console.log('Loading leaderboard for page:', page);
+            fetch(`${baseURL}/leaderboard_content?page=${page}`)
+            .then(response => response.text())
+            .then(html => {
+                document.querySelector('#leaderboard-content').innerHTML = html;
+                const paginationLinks = document.querySelectorAll('.pagination-link');
+                paginationLinks.forEach(link => {
+                    link.addEventListener('click', function(event) {
+                        event.preventDefault();
+                        const newPage = this.getAttribute('data-page');
+                        loadLeaderboard(newPage);
+                    });
+                });
+            })
+            .catch(error => {
+                console.error('Error loading leaderboard:', error);
+            });
+        }
+
+        // Tab Navigation
+        const tabs = document.querySelectorAll('.tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                console.log('Tab clicked:', this.getAttribute('data-tab'));
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+
+                document.getElementById('scaling-wrapper').style.display = 'none';
+                document.getElementById('game-content').style.display = 'none';
+                document.getElementById('leaderboard-content').style.display = 'none';
+                document.getElementById('shop-content').style.display = 'none';
+                document.getElementById('social-content').style.display = 'none';
+                document.getElementById('status-container').style.display = 'none';
+                document.getElementById('fortune-reward-container').style.visibility = 'hidden';
+
+                const selectedTab = this.getAttribute('data-tab');
+                if (selectedTab === 'game') {
+                    document.getElementById('scaling-wrapper').style.display = 'flex';
+                    document.getElementById('game-content').style.display = 'block';
+                    document.getElementById('status-container').style.display = 'block';
+                } else if (selectedTab === 'leaderboard') {
+                    loadLeaderboard();
+                    document.getElementById('leaderboard-content').style.display = 'block';
+                } else if (selectedTab === 'shop') {
+                    document.getElementById('shop-content').style.display = 'block';
+                } else if (selectedTab === 'social') {
+                    document.getElementById('social-content').style.display = 'block';
+                    const referralLinkInput = document.getElementById('referral-link');
+                    referralLinkInput.value = getReferralLink();
+                    addSocialTabEventListeners();
+                }
+            });
+        });
+
+        console.log('Initialization complete');
+    });
+    </script>
+</body>
+</html>
